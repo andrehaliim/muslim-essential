@@ -1,10 +1,15 @@
+import 'dart:async';
+import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:lat_lng_to_timezone/lat_lng_to_timezone.dart' as tzmap;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:receive_intent/receive_intent.dart' as receive_intent;
 import 'package:shalat_essential/components/rotating_dot.dart';
 import 'package:shalat_essential/objectbox/location_database.dart';
 import 'package:shalat_essential/services/prayer_service.dart';
@@ -18,6 +23,7 @@ import '../objectbox/prayer_database.dart';
 import '../services/colors.dart';
 import '../services/firebase_service.dart';
 import '../services/location_service.dart';
+import '../services/notification_service.dart';
 import '../services/prayer_tile.dart';
 import '../services/widget_update.dart';
 import 'history.dart';
@@ -50,12 +56,22 @@ class _NewHomePageState extends State<NewHomePage> {
   late PrayerDatabase? todayPrayer;
   late PrayerDatabase? yesterdayPrayer;
   bool isLoadingTracker = false;
+  String timezoneName = '';
+  StreamSubscription<receive_intent.Intent?>? _intentSub;
 
   @override
   void initState() {
     initAll();
+    _listenForIntents();
     super.initState();
   }
+
+  @override
+  void dispose() {
+    _intentSub?.cancel();
+    super.dispose();
+  }
+
 
   Future<void> initAll() async {
     showLoading();
@@ -72,9 +88,20 @@ class _NewHomePageState extends State<NewHomePage> {
     // 2. Location info and Prayer Data fetching logic
     position = await LocationService().determinePosition();
     locationName = await LocationService().getLocationName(position);
+    timezoneName = tzmap.latLngToTimezoneString(position.latitude, position.longitude);
     WidgetUpdate().updateWidgetLocation(location: locationName);
 
     final lastLocation = locationBox.query().order(LocationDatabase_.id, flags: Order.descending).build().findFirst();
+    if(lastLocation == null) {
+      LocationDatabase locationDatabase = LocationDatabase(
+        name: locationName,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        timezone: timezoneName
+      );
+      locationBox.put(locationDatabase);
+    }
+
     final firstPrayerRecord = prayerBox.getAll().isNotEmpty ? prayerBox.getAll().first : null;
 
     bool shouldFetchNewData = false;
@@ -93,6 +120,14 @@ class _NewHomePageState extends State<NewHomePage> {
         );
         if (distanceInMeters > 100) {
           shouldFetchNewData = true;
+
+          LocationDatabase locationDatabase = LocationDatabase(
+              name: locationName,
+              latitude: position.latitude,
+              longitude: position.longitude,
+              timezone: timezoneName
+          );
+          locationBox.put(locationDatabase);
         }
       }
 
@@ -105,7 +140,10 @@ class _NewHomePageState extends State<NewHomePage> {
     }
 
     if (shouldFetchNewData) {
+      log('=== Fetching new data ===');
       await PrayerService.getShalatDataForMonth(position, firebaseUser?.uid);
+    } else {
+      log('=== No fetching data ===');
     }
 
     // 3. Read today's record from db
@@ -129,7 +167,7 @@ class _NewHomePageState extends State<NewHomePage> {
             children: [
               Text('Muslim Essential'),
               SizedBox(width: 10,),
-              appVersion.isNotEmpty ? Text('v$appVersion', style: Theme.of(context).textTheme.bodySmall) : Container(),
+              Text('v$appVersion', style: Theme.of(context).textTheme.bodySmall),
               Spacer(),
               Visibility(
                 visible: visibleLogout,
@@ -377,51 +415,92 @@ class _NewHomePageState extends State<NewHomePage> {
   }
 
   void toggleNotification(int id) async {
-    final allPrayers = prayerBox.getAll();
+    String prayerName = '';
+    DateTime time;
+    bool isNotificationEnabled = false;
+
+    switch (id) {
+      case 1:
+        prayerName = "Fajr";
+        time = fajr;
+        isNotificationEnabled = !todayPrayer!.notifFajr;
+        break;
+      case 2:
+        prayerName = "Dhuhr";
+        time = dhuhr;
+        isNotificationEnabled = !todayPrayer!.notifDhuhr;
+        log(isNotificationEnabled.toString());
+        break;
+      case 3:
+        prayerName = "Asr";
+        time = asr;
+        isNotificationEnabled = !todayPrayer!.notifAsr;
+        break;
+      case 4:
+        prayerName = "Maghrib";
+        time = maghrib;
+        isNotificationEnabled = !todayPrayer!.notifMaghrib;
+        break;
+      case 5:
+        prayerName = "Isha";
+        time = isha;
+        isNotificationEnabled = !todayPrayer!.notifIsha;
+        break;
+      default:
+        return;
+    }
 
     setState(() {
-      for (var p in allPrayers) {
+      final allPrayers = prayerBox.getAll();
+      List<PrayerDatabase> updatedPrayers = [];
+
+      for (var prayer in allPrayers) {
         switch (id) {
           case 1:
-            p.notifFajr = !p.notifFajr;
+            prayer.notifFajr = isNotificationEnabled;
             break;
           case 2:
-            p.notifDhuhr = !p.notifDhuhr;
+            prayer.notifDhuhr = isNotificationEnabled;
             break;
           case 3:
-            p.notifAsr = !p.notifAsr;
+            prayer.notifAsr = isNotificationEnabled;
             break;
           case 4:
-            p.notifMaghrib = !p.notifMaghrib;
+            prayer.notifMaghrib = isNotificationEnabled;
             break;
           case 5:
-            p.notifIsha = !p.notifIsha;
+            prayer.notifIsha = isNotificationEnabled;
             break;
+          default:
+            return;
         }
+        updatedPrayers.add(prayer);
       }
-      prayerBox.putMany(allPrayers);
-      calculateTodayPrayer();
+
+        prayerBox.putMany(updatedPrayers);
+        calculateTodayPrayer();
     });
 
-    /*if ((prayerModel.fajrNotif && id == 1) ||
-        (prayerModel.dhuhrNotif && id == 2) ||
-        (prayerModel.asrNotif && id == 3) ||
-        (prayerModel.maghribNotif && id == 4) ||
-        (prayerModel.ishaNotif && id == 5)) {
-      // Schedule notification
-      NotificationService.scheduleNotification(
-        id: id,
-        title: "Prayer Reminder",
-        body: "$prayerName prayer will start in 5 minutes at ${DateFormat.Hm().format(time)}.",
-        scheduledTime: time,
+    if (isNotificationEnabled) {
+        NotificationService.scheduleNotification(
+          id: id,
+          title: "Prayer Reminder",
+          body: "$prayerName prayer is at ${DateFormat.Hm().format(time)}.",
+          scheduledTime: time.subtract(const Duration(minutes: 5)),
+        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Notification for $prayerName is enabled", style: TextStyle(color: Colors.white),), backgroundColor: Colors.green, duration: Duration(seconds: 1),),
       );
       WidgetUpdate().updateWidgetPrayerNotification(name: prayerName, notification: true);
     } else {
       // Cancel notification
       final plugin = FlutterLocalNotificationsPlugin();
       await plugin.cancel(id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Notification for $prayerName is disabled", style: TextStyle(color: Colors.white)), backgroundColor: Colors.red, duration: Duration(seconds: 1)),
+      );
       WidgetUpdate().updateWidgetPrayerNotification(name: prayerName, notification: false);
-    }*/
+    }
   }
 
   void trackPrayerFunction() async {
@@ -495,7 +574,6 @@ class _NewHomePageState extends State<NewHomePage> {
 
     // If none remaining today -> next is tomorrow's Fajr
     if (next == null) {
-      // You will load tomorrow's Fajr from DB too in initAll. Example:
       final tomorrowPrayer = objectbox.store.box<PrayerDatabase>()
           .query(PrayerDatabase_.date.equals(DateFormat('yyyy-MM-dd').format(now.add(const Duration(days: 1)))))
           .build()
@@ -528,6 +606,23 @@ class _NewHomePageState extends State<NewHomePage> {
   void showLoading() {
     setState(() {
       isLoading = !isLoading;
+    });
+  }
+
+  void _listenForIntents() async {
+    final initialIntent = await receive_intent.ReceiveIntent.getInitialIntent();
+    if (initialIntent?.extra?['fromWidget'] == 'qibla') {
+      showCompass(context);
+    } else if (initialIntent?.extra?['fromWidget'] == 'tracker'){
+      trackPrayerFunction();
+    }
+
+    _intentSub = receive_intent.ReceiveIntent.receivedIntentStream.listen((intent) {
+      if (intent!.extra?['fromWidget'] == 'qibla') {
+        showCompass(context);
+      } else if (intent.extra?['fromWidget'] == 'tracker') {
+        trackPrayerFunction();
+      }
     });
   }
 }

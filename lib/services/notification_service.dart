@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -87,6 +88,11 @@ class NotificationService {
   static void logNotification(DateTime dateTime, int id, bool? isInit) {
     final dateStr = DateFormat('yyyy-MM-dd').format(dateTime);
     final timeStr = DateFormat('HH:mm:ss').format(dateTime);
-    print("🔔 Notification scheduled for $dateStr at $timeStr (ID: $id) is init : $isInit");
+    log("🔔 Notification scheduled for $dateStr at $timeStr (ID: $id) is init : $isInit");
+  }
+
+  static Future<void> cancelAllNotifications() async {
+    await _notifications.cancelAll();
+    log("All scheduled notifications have been cancelled.");
   }
 }

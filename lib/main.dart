@@ -1,14 +1,18 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shalat_essential/objectbox/location_database.dart';
+import 'package:timezone/data/latest.dart' as tzl;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:objectbox/objectbox.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shalat_essential/objectbox.g.dart';
 import 'package:shalat_essential/objectbox/store.dart';
 import 'package:shalat_essential/services/themedata.dart';
 import 'package:shalat_essential/views/newhomepage.dart';
 import 'package:workmanager/workmanager.dart';
-
+import 'objectbox/prayer_database.dart';
 import 'services/firebase_options.dart';
 import 'services/notification_service.dart';
 
@@ -18,91 +22,100 @@ Admin? objectBoxAdmin;
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
-  /*Workmanager().executeTask((task, inputData) async {
+  Workmanager().executeTask((task, inputData) async {
+    // 1. Initialize services
     WidgetsFlutterBinding.ensureInitialized();
-    tzl.initializeTimeZones();
-    final prefs = await SharedPreferences.getInstance();
+    await NotificationService.init();
+    tzl.initializeTimeZones(); // <-- Initialize timezone database
 
-    String location = prefs.getString('location') ?? 'Failed to get saved location';
-    double latitude = prefs.getDouble('lat') ?? 0.0;
-    double longitude = prefs.getDouble('long') ?? 0.0;
-    bool fajrNotif = prefs.getBool("fajr_notif") ?? false;
-    bool dhuhrNotif = prefs.getBool("dhuhr_notif") ?? false;
-    bool asrNotif = prefs.getBool("asr_notif") ?? false;
-    bool maghribNotif = prefs.getBool("maghrib_notif") ?? false;
-    bool ishaNotif = prefs.getBool("isha_notif") ?? false;
+    // 2. Initialize ObjectBox and get both boxes
+    final objectbox = await ObjectBox.create();
+    final prayerBox = objectbox.store.box<PrayerDatabase>();
+    final locationBox = objectbox.store.box<LocationDatabase>(); // <-- Get the location box
 
-    final value = await PrayerService.getShalatDataBackground(latitude, longitude);
-
+    // 3. Define the task logic
     switch (task) {
       case updateWidgetTask:
-      // Prayer times
-        await HomeWidget.saveWidgetData<String>('fajr_time', value.prayerTimes.fajr != null ? DateFormat('HH:mm').format(value.prayerTimes.fajr!) : '--:--');
-        await HomeWidget.saveWidgetData<String>('dhuhr_time', value.prayerTimes.dhuhr != null ? DateFormat('HH:mm').format(value.prayerTimes.dhuhr!) : '--:--');
-        await HomeWidget.saveWidgetData<String>('asr_time', value.prayerTimes.asr != null ? DateFormat('HH:mm').format(value.prayerTimes.asr!) : '--:--');
-        await HomeWidget.saveWidgetData<String>('maghrib_time', value.prayerTimes.maghrib != null ? DateFormat('HH:mm').format(value.prayerTimes.maghrib!) : '--:--');
-        await HomeWidget.saveWidgetData<String>('isha_time', value.prayerTimes.isha != null ? DateFormat('HH:mm').format(value.prayerTimes.isha!) : '--:--');
+        // --- Cancel ALL previously scheduled notifications ---
+        // This prevents duplicates and clears out old schedules.
+        await NotificationService.cancelAllNotifications();
 
-        // Reschedule Notification
-        if (value.prayerTimes.fajr != null && fajrNotif) {
-          NotificationService.scheduleNotification(
-            id: 1,
-            title: "Prayer Reminder",
-            body: "Fajr prayer will start in 5 minutes at ${DateFormat.Hm().format(value.prayerTimes.fajr!)}.",
-            scheduledTime: value.prayerTimes.fajr!,
-          );
+        // --- Get the Timezone from LocationDatabase ---
+        final locationData = locationBox.getAll().firstOrNull;
+        if (locationData == null || locationData.timezone.isEmpty) {
+          // If we have no location data, we can't schedule accurately.
+          // You could optionally schedule a notification to ask the user to open the app.
+          objectbox.store.close();
+          return Future.value(false); // Indicate failure to schedule
         }
-        if (value.prayerTimes.dhuhr != null && dhuhrNotif) {
-          NotificationService.scheduleNotification(
-            id: 2,
-            title: "Prayer Reminder",
-            body: "Dhuhr prayer will start in 5 minutes at ${DateFormat.Hm().format(value.prayerTimes.dhuhr!)}.",
-            scheduledTime: value.prayerTimes.dhuhr!,
+        final tz.Location location = tz.getLocation(locationData.timezone);
+
+        // --- Get today's prayer data ---
+        final now = DateTime.now();
+        // The date format in your DB is 'dd-MM-yyyy'
+        final todayString = DateFormat('dd-MM-yyyy').format(now);
+        final query = prayerBox.query(PrayerDatabase_.date.equals(todayString)).build();
+        final todayPrayer = query.findFirst();
+        query.close();
+
+        if (todayPrayer == null) {
+          await NotificationService.showNotification(
+            id: 99,
+            title: "Prayer Times Update Needed",
+            body: "Please open the app to download the new prayer schedule.",
           );
+          objectbox.store.close();
+          return Future.value(true);
         }
-        if (value.prayerTimes.asr != null && asrNotif) {
-          NotificationService.scheduleNotification(
-            id: 3,
-            title: "Prayer Reminder",
-            body: "Asr prayer will start in 5 minutes at ${DateFormat.Hm().format(value.prayerTimes.asr!)}.",
-            scheduledTime: value.prayerTimes.asr!,
-          );
-        }
-        if (value.prayerTimes.maghrib != null && maghribNotif) {
-          NotificationService.scheduleNotification(
-            id: 4,
-            title: "Prayer Reminder",
-            body: "Maghrib prayer will start in 5 minutes at ${DateFormat.Hm().format(value.prayerTimes.maghrib!)}.",
-            scheduledTime: value.prayerTimes.maghrib!,
-          );
-        }
-        if (value.prayerTimes.isha != null && ishaNotif) {
-          NotificationService.scheduleNotification(
-            id: 5,
-            title: "Prayer Reminder",
-            body: "Isha prayer will start in 5 minutes at ${DateFormat.Hm().format(value.prayerTimes.isha!)}.",
-            scheduledTime: value.prayerTimes.isha!,
-          );
+
+        // --- Schedule notifications for today based on settings ---
+        final prayerTimes = {
+          1: {'time': tz.TZDateTime.from(todayPrayer.fajr, location), 'enabled': todayPrayer.notifFajr, 'name': 'Fajr'},
+          2: {'time': tz.TZDateTime.from(todayPrayer.dhuhr, location), 'enabled': todayPrayer.notifDhuhr, 'name': 'Dhuhr'},
+          3: {'time': tz.TZDateTime.from(todayPrayer.asr, location), 'enabled': todayPrayer.notifAsr, 'name': 'Asr'},
+          4: {'time': tz.TZDateTime.from(todayPrayer.maghrib, location), 'enabled': todayPrayer.notifMaghrib, 'name': 'Maghrib'},
+          5: {'time': tz.TZDateTime.from(todayPrayer.isha, location), 'enabled': todayPrayer.notifIsha, 'name': 'Isha'},
+        };
+
+        // Get the current time in the correct timezone for comparison
+        final tz.TZDateTime nowInLocation = tz.TZDateTime.now(location);
+
+        for (final entry in prayerTimes.entries) {
+          final id = entry.key;
+          final time = entry.value['time'] as tz.TZDateTime;
+          final enabled = entry.value['enabled'] as bool;
+          final name = entry.value['name'] as String;
+
+          if (enabled && time.isAfter(nowInLocation)) {
+            await NotificationService.scheduleNotification(
+              id: id,
+              title: "Prayer Reminder",
+              body: "$name prayer is at ${DateFormat.Hm().format(time)}.",
+              scheduledTime: time, // Pass the timezone-aware TZDateTime directly
+            );
+          }
         }
 
         // Reset checks
-        await HomeWidget.saveWidgetData<bool>('fajr_check', false);
-        await HomeWidget.saveWidgetData<bool>('dhuhr_check', false);
-        await HomeWidget.saveWidgetData<bool>('asr_check', false);
-        await HomeWidget.saveWidgetData<bool>('maghrib_check', false);
-        await HomeWidget.saveWidgetData<bool>('isha_check', false);
+        await HomeWidget.saveWidgetData<bool>('fajr_check', todayPrayer.doneFajr);
+        await HomeWidget.saveWidgetData<bool>('dhuhr_check', todayPrayer.doneDhuhr);
+        await HomeWidget.saveWidgetData<bool>('asr_check', todayPrayer.doneAsr);
+        await HomeWidget.saveWidgetData<bool>('maghrib_check', todayPrayer.doneMaghrib);
+        await HomeWidget.saveWidgetData<bool>('isha_check', todayPrayer.doneIsha);
 
         // Save extra info
-        await HomeWidget.saveWidgetData<String>('location_name', location);
+        await HomeWidget.saveWidgetData<String>('location_name', 'test');
         await HomeWidget.saveWidgetData<String>('date_time', DateFormat('dd MMM yyyy HH:mm').format(DateTime.now()));
 
         await HomeWidget.updateWidget(name: 'PrayerWidgetProvider');
-        break;
+
+        objectbox.store.close();
+        return Future.value(true);
+
       default:
         return Future.value(false);
     }
-    return Future.value(true);
-  });*/
+  });
 }
 
 void main() async {
@@ -110,30 +123,32 @@ void main() async {
   objectbox = await ObjectBox.create();
 
   if (kDebugMode && Admin.isAvailable()) {
-    objectBoxAdmin = Admin(objectbox.store, bindUri: 'http://127.0.0.1:8090');
+    // Consider not creating the admin panel on release builds
+    objectBoxAdmin = Admin(objectbox.store);
   }
 
-  // Initialize WorkManager FIRST
+  // Initialize WorkManager
   await Workmanager().initialize(
-    callbackDispatcher
+    callbackDispatcher,
+    isInDebugMode: kDebugMode, // Set this to true to see logs from the isolate
   );
 
-  // Then init Firebase and Notifications
+  // Then init other services for the main app UI
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await NotificationService.init();
 
-  // Schedule periodic task (replace if already scheduled)
-  final now = DateTime.now();
-  final tomorrow = DateTime(now.year, now.month, now.day + 1, 0, 1);
-  final updateWidgetDelay = tomorrow.difference(now);
-
+  // Schedule the daily task
   await Workmanager().registerPeriodicTask(
-    updateWidgetTask,
-    updateWidgetTask,
-    frequency: const Duration(hours: 24),
-    initialDelay: updateWidgetDelay,
+    updateWidgetTask, // A unique name for the task
+    updateWidgetTask, // The name of the task registered in callbackDispatcher
+    frequency: const Duration(hours: 12), // Run every 12-24 hours for reliability
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.replace, // Replace the old task if it exists
+    initialDelay: const Duration(minutes: 5), // Run shortly after app start for the first time
+    constraints: Constraints(
+      networkType: NetworkType.notRequired,
+    ),
   );
 
   runApp(
