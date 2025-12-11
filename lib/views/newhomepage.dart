@@ -63,6 +63,7 @@ class _NewHomePageState extends State<NewHomePage> {
   void initState() {
     initAll();
     _listenForIntents();
+    getAppVersion();
     super.initState();
   }
 
@@ -83,6 +84,9 @@ class _NewHomePageState extends State<NewHomePage> {
     if(firebaseUser != null) {
       visibleLogout = true;
       nickName = await FirebaseService.loadNickname();
+    } else {
+      visibleLogout = false;
+      nickName = 'Guest';
     }
 
     // 2. Location info and Prayer Data fetching logic
@@ -172,13 +176,13 @@ class _NewHomePageState extends State<NewHomePage> {
               Visibility(
                 visible: visibleLogout,
                 child: GestureDetector(
-                  onTap: () => FirebaseService.logout().then((_) {
+                  onTap: () => FirebaseService.logout().then((_) async {
                     if (mounted) {
-                      setState(() {
+                        await PrayerService().resetDonePrayerDatabase();
+                        initAll();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Logout successful")),
                         );
-                      });
                     }
                   }),
                   child: Icon(Icons.logout),
@@ -486,7 +490,7 @@ class _NewHomePageState extends State<NewHomePage> {
           id: id,
           title: "Prayer Reminder",
           body: "$prayerName prayer is at ${DateFormat.Hm().format(time)}.",
-          scheduledTime: time.subtract(const Duration(minutes: 5)),
+          scheduledTime: time,
         );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Notification for $prayerName is enabled", style: TextStyle(color: Colors.white),), backgroundColor: Colors.green, duration: Duration(seconds: 1),),
@@ -520,6 +524,8 @@ class _NewHomePageState extends State<NewHomePage> {
         isLoadingTracker = true;
       });
       await PrayerService().trackPrayer(context, firebaseUser!.uid);
+      await FirebaseService().getFirebasePrayers();
+      await calculateTodayPrayer();
       setState(() {
         isLoadingTracker = false;
       });

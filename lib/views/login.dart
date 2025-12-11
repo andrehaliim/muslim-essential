@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
@@ -26,28 +28,27 @@ class _LoginState extends State<Login> {
     });
   }
 
-  Future<void> doLogin() async {
+  Future<bool> doLogin() async {
     try {
       await auth.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login successful")),
-      );
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final idToken = await user.getIdToken(); // normal token
-        final idTokenResult = await user.getIdTokenResult(); // with extra info
-        print("Token: $idToken");
-        print("Expires at: ${idTokenResult.expirationTime}");
-        Navigator.pop(context,true);
+        final idToken = await user.getIdToken();
+        final idTokenResult = await user.getIdTokenResult();
+        log("Token: $idToken");
+        log("Expires at: ${idTokenResult.expirationTime}");
+        return true;
       }
+      return false;
     } on FirebaseAuthException catch (e) {
-      print(e.message ?? '');
+      log(e.message ?? '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? "Login failed")),
       );
+      return false;
     }
   }
 
@@ -184,13 +185,15 @@ class _LoginState extends State<Login> {
                     style: Theme.of(context).elevatedButtonTheme.style,
                     onPressed: () async{
                       if (_formKey.currentState!.validate()) {
-                        // All validations passed
-                        print("Email: ${emailController.text}");
-                        print("Password: ${passwordController.text}");
-
                         loginLoading();
-                        await doLogin();
+                        bool success = await doLogin();
+                        if(success){
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Login successful")),
+                          );
+                        }
                         loginLoading();
+                        Navigator.pop(context,true);
                       }
                     },
                     child: isLoading

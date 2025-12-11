@@ -1,17 +1,18 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:shalat_essential/objectbox/location_database.dart';
-import 'package:timezone/data/latest.dart' as tzl;
-import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shalat_essential/objectbox.g.dart';
+import 'package:shalat_essential/objectbox/location_database.dart';
 import 'package:shalat_essential/objectbox/store.dart';
 import 'package:shalat_essential/services/themedata.dart';
 import 'package:shalat_essential/views/newhomepage.dart';
+import 'package:timezone/data/latest.dart' as tzl;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
+
 import 'objectbox/prayer_database.dart';
 import 'services/firebase_options.dart';
 import 'services/notification_service.dart';
@@ -26,27 +27,24 @@ void callbackDispatcher() {
     // 1. Initialize services
     WidgetsFlutterBinding.ensureInitialized();
     await NotificationService.init();
-    tzl.initializeTimeZones(); // <-- Initialize timezone database
+    tzl.initializeTimeZones();
 
     // 2. Initialize ObjectBox and get both boxes
     final objectbox = await ObjectBox.create();
     final prayerBox = objectbox.store.box<PrayerDatabase>();
-    final locationBox = objectbox.store.box<LocationDatabase>(); // <-- Get the location box
+    final locationBox = objectbox.store.box<LocationDatabase>();
 
     // 3. Define the task logic
     switch (task) {
       case updateWidgetTask:
         // --- Cancel ALL previously scheduled notifications ---
-        // This prevents duplicates and clears out old schedules.
         await NotificationService.cancelAllNotifications();
 
         // --- Get the Timezone from LocationDatabase ---
         final locationData = locationBox.getAll().firstOrNull;
         if (locationData == null || locationData.timezone.isEmpty) {
-          // If we have no location data, we can't schedule accurately.
-          // You could optionally schedule a notification to ask the user to open the app.
           objectbox.store.close();
-          return Future.value(false); // Indicate failure to schedule
+          return Future.value(false);
         }
         final tz.Location location = tz.getLocation(locationData.timezone);
 
@@ -91,7 +89,7 @@ void callbackDispatcher() {
               id: id,
               title: "Prayer Reminder",
               body: "$name prayer is at ${DateFormat.Hm().format(time)}.",
-              scheduledTime: time, // Pass the timezone-aware TZDateTime directly
+              scheduledTime: time,
             );
           }
         }
@@ -123,14 +121,12 @@ void main() async {
   objectbox = await ObjectBox.create();
 
   if (kDebugMode && Admin.isAvailable()) {
-    // Consider not creating the admin panel on release builds
     objectBoxAdmin = Admin(objectbox.store);
   }
 
   // Initialize WorkManager
   await Workmanager().initialize(
     callbackDispatcher,
-    isInDebugMode: kDebugMode, // Set this to true to see logs from the isolate
   );
 
   // Then init other services for the main app UI
@@ -140,15 +136,15 @@ void main() async {
   await NotificationService.init();
 
   // Schedule the daily task
+  final now = DateTime.now();
+  final tomorrow = DateTime(now.year, now.month, now.day + 1, 0, 1);
+  final updateWidgetDelay = tomorrow.difference(now);
+
   await Workmanager().registerPeriodicTask(
-    updateWidgetTask, // A unique name for the task
-    updateWidgetTask, // The name of the task registered in callbackDispatcher
-    frequency: const Duration(hours: 12), // Run every 12-24 hours for reliability
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.replace, // Replace the old task if it exists
-    initialDelay: const Duration(minutes: 5), // Run shortly after app start for the first time
-    constraints: Constraints(
-      networkType: NetworkType.notRequired,
-    ),
+    updateWidgetTask,
+    updateWidgetTask,
+    frequency: const Duration(hours: 24),
+    initialDelay: updateWidgetDelay,
   );
 
   runApp(

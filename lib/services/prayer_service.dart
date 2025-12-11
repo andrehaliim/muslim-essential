@@ -183,4 +183,17 @@ class PrayerService {
       prayerBox.put(prayerData);
     }
   }
+
+  Future<void> resetDonePrayerDatabase() async {
+    Box<PrayerDatabase> prayerBox = objectbox.store.box<PrayerDatabase>();
+    final allPrayers = prayerBox.getAll();
+    for(var prayer in allPrayers){
+      prayer.doneFajr = false;
+      prayer.doneDhuhr = false;
+      prayer.doneAsr = false;
+      prayer.doneMaghrib = false;
+      prayer.doneIsha = false;
+      prayerBox.put(prayer);
+    }
+  }
 }

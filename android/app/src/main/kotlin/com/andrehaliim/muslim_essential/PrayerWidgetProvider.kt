@@ -33,31 +33,31 @@ class PrayerWidgetProvider : AppWidgetProvider() {
             val fajrNotif = prefs.getBoolean("fajr_notification", false)
             views.setImageViewResource(
                 R.id.fajr_notification,
-                if (fajrNotif) R.drawable.ic_notification_off else R.drawable.ic_notification_on
+                if (fajrNotif) R.drawable.ic_notification_on else R.drawable.ic_notification_off
             )
 
             val dhuhrNotif = prefs.getBoolean("dhuhr_notification", false)
             views.setImageViewResource(
                 R.id.dhuhr_notification,
-                if (dhuhrNotif) R.drawable.ic_notification_off else R.drawable.ic_notification_on
+                if (dhuhrNotif) R.drawable.ic_notification_on else R.drawable.ic_notification_off
             )
 
             val asrNotif = prefs.getBoolean("asr_notification", false)
             views.setImageViewResource(
                 R.id.asr_notification,
-                if (asrNotif) R.drawable.ic_notification_off else R.drawable.ic_notification_on
+                if (asrNotif) R.drawable.ic_notification_on else R.drawable.ic_notification_off
             )
 
             val maghribNotif = prefs.getBoolean("maghrib_notification", false)
             views.setImageViewResource(
                 R.id.maghrib_notification,
-                if (maghribNotif) R.drawable.ic_notification_off else R.drawable.ic_notification_on
+                if (maghribNotif) R.drawable.ic_notification_on else R.drawable.ic_notification_off
             )
 
             val ishaNotif = prefs.getBoolean("isha_notification", false)
             views.setImageViewResource(
                 R.id.isha_notification,
-                if (ishaNotif) R.drawable.ic_notification_off else R.drawable.ic_notification_on
+                if (ishaNotif) R.drawable.ic_notification_on else R.drawable.ic_notification_off
             )
 
             // ✔ Tracker icons

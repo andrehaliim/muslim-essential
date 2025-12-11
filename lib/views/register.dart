@@ -232,10 +232,6 @@ class _RegisterState extends State<Register> {
                     style: Theme.of(context).elevatedButtonTheme.style,
                     onPressed: () async{
                       if (_formKey.currentState!.validate()) {
-                        // All validations passed
-                        print("Email: ${emailController.text}");
-                        print("Password: ${passwordController.text}");
-
                         loginLoading();
                         await _register();
                         loginLoading();
