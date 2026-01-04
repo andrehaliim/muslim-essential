@@ -1,4 +1,4 @@
-# shalat_essential
+# muslim_essential
 
 A mobile prayer time app that automatically displays daily prayer schedules based on the user's location, complete with adhan notifications, Qibla compass, and a personal prayer tracking feature. Designed with a modern, lightweight interface and works offline.
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shalat_essential/services/colors.dart';
+import 'package:muslim_essential/services/colors.dart';
 // Dark THEME
 final ThemeData appDarkTheme = ThemeData(
   brightness: Brightness.dark,

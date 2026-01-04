@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shalat_essential/components/custom_snackbar.dart';
+import 'package:muslim_essential/components/custom_snackbar.dart';
 
 import '../main.dart';
 import '../objectbox.g.dart';

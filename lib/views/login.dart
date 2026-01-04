@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:shalat_essential/components/custom_snackbar.dart';
-import 'package:shalat_essential/components/rotating_dot.dart';
-import 'package:shalat_essential/services/colors.dart';
-import 'package:shalat_essential/services/firebase_service.dart';
-import 'package:shalat_essential/views/forgot_password.dart';
-import 'package:shalat_essential/views/register.dart';
+import 'package:muslim_essential/components/custom_snackbar.dart';
+import 'package:muslim_essential/components/rotating_dot.dart';
+import 'package:muslim_essential/services/colors.dart';
+import 'package:muslim_essential/services/firebase_service.dart';
+import 'package:muslim_essential/views/forgot_password.dart';
+import 'package:muslim_essential/views/register.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});

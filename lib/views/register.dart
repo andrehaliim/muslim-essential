@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shalat_essential/components/rotating_dot.dart';
-import 'package:shalat_essential/services/colors.dart';
-import 'package:shalat_essential/services/firebase_service.dart';
+import 'package:muslim_essential/components/rotating_dot.dart';
+import 'package:muslim_essential/services/colors.dart';
+import 'package:muslim_essential/services/firebase_service.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});

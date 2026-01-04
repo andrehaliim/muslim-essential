@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:lat_lng_to_timezone/lat_lng_to_timezone.dart' as tzmap;
-import 'package:shalat_essential/components/custom_snackbar.dart';
+import 'package:muslim_essential/components/custom_snackbar.dart';
 import 'package:timezone/data/latest.dart' as tzl;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -110,7 +110,7 @@ class PrayerService {
     return currentPrayer;
   }
 
-  static Future<void> getShalatDataForMonth(Position position, String? userId) async {
+  static Future<void> getmuslimDataForMonth(Position position, String? userId) async {
     Box<PrayerDatabase> prayerBox = objectbox.store.box<PrayerDatabase>();
     
     prayerBox.removeAll();

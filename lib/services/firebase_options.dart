@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '831675582615',
     projectId: 'muslim-essential-ce15c',
     storageBucket: 'muslim-essential-ce15c.firebasestorage.app',
-    iosBundleId: 'com.andrehaliim.shalatessential.shalatEssential',
+    iosBundleId: 'com.andrehaliim.muslimessential.muslimEssential',
   );
 }

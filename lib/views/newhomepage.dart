@@ -10,9 +10,9 @@ import 'package:lat_lng_to_timezone/lat_lng_to_timezone.dart' as tzmap;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:receive_intent/receive_intent.dart' as receive_intent;
-import 'package:shalat_essential/components/rotating_dot.dart';
-import 'package:shalat_essential/objectbox/location_database.dart';
-import 'package:shalat_essential/services/prayer_service.dart';
+import 'package:muslim_essential/components/rotating_dot.dart';
+import 'package:muslim_essential/objectbox/location_database.dart';
+import 'package:muslim_essential/services/prayer_service.dart';
 import 'package:timezone/data/latest.dart' as tzl;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -146,7 +146,7 @@ class _NewHomePageState extends State<NewHomePage> {
 
     if (shouldFetchNewData) {
       log('=== Fetching new data ===');
-      await PrayerService.getShalatDataForMonth(position, firebaseUser?.uid);
+      await PrayerService.getmuslimDataForMonth(position, firebaseUser?.uid);
     } else {
       log('=== No fetching data ===');
     }

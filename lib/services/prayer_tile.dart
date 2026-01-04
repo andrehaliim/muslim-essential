@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shalat_essential/objectbox/prayer_database.dart';
-import 'package:shalat_essential/services/colors.dart';
+import 'package:muslim_essential/objectbox/prayer_database.dart';
+import 'package:muslim_essential/services/colors.dart';
 
 class PrayerTile extends StatelessWidget {
   final PrayerDatabase? prayerDatabase;
