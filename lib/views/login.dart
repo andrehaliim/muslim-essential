@@ -4,6 +4,7 @@ import 'package:shalat_essential/components/custom_snackbar.dart';
 import 'package:shalat_essential/components/rotating_dot.dart';
 import 'package:shalat_essential/services/colors.dart';
 import 'package:shalat_essential/services/firebase_service.dart';
+import 'package:shalat_essential/views/forgot_password.dart';
 import 'package:shalat_essential/views/register.dart';
 
 class Login extends StatefulWidget {
@@ -50,7 +51,8 @@ class _LoginState extends State<Login> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text('Log in now', style: Theme.of(context).primaryTextTheme.headlineMedium),
+                Text('Log in', style: Theme.of(context).primaryTextTheme.headlineMedium),
+                const SizedBox(height: 40),
                 Text('Please login to track your prayer', style: Theme.of(context).primaryTextTheme.labelLarge),
                 const SizedBox(height: 20),
 
@@ -147,7 +149,17 @@ class _LoginState extends State<Login> {
 
                 SizedBox(
                   width: screenWidth,
-                  child: Text('Forgot password', style: Theme.of(context).primaryTextTheme.bodyMedium, textAlign: TextAlign.end),
+                  child: GestureDetector(
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            childBuilder: (context) => ForgotPassword(),
+                          ),
+                        );
+                      },
+                      child: Text('Forgot password', style: Theme.of(context).primaryTextTheme.bodyMedium, textAlign: TextAlign.end)),
                 ),
 
                 const SizedBox(height: 40),

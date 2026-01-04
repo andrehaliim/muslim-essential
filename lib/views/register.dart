@@ -52,6 +52,7 @@ class _RegisterState extends State<Register> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text('Register', style: Theme.of(context).primaryTextTheme.headlineMedium),
+                const SizedBox(height: 40),
                 Text('Fullfill the form below', style: Theme.of(context).primaryTextTheme.labelLarge),
                 const SizedBox(height: 20),
 

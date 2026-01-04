@@ -515,6 +515,7 @@ class _NewHomePageState extends State<NewHomePage> {
       );
       if(refresh){
         initAll();
+        await FirebaseService().getFirebasePrayers();
       }
     } else {
       setState(() {

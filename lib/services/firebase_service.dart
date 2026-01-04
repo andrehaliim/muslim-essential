@@ -20,15 +20,22 @@ class FirebaseService {
       );
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final idToken = await user.getIdToken();
-        final idTokenResult = await user.getIdTokenResult();
-        log("Token: $idToken");
-        log("Expires at: ${idTokenResult.expirationTime}");
-        return true;
+        final userDocRef = FirebaseFirestore.instance.collection("users").doc(user.uid);
+        final doc = await userDocRef.get();
+        if (doc.exists) {
+          final idToken = await user.getIdToken();
+          final idTokenResult = await user.getIdTokenResult();
+          log("Token: $idToken");
+          log("Expires at: ${idTokenResult.expirationTime}");
+          return true;
+        } else {
+          CustomSnackbar().failedSnackbar(context, 'Incorrect email or password.');
+          return false;
+        }
       }
       return false;
     } on FirebaseAuthException catch (e) {
-      log("Firebase Auth Error Code: ${e.code}"); // Log the code for debugging
+      log("Firebase Auth Error Code: ${e.code}");
 
       String errorMessage;
       switch (e.code) {
@@ -81,6 +88,33 @@ class FirebaseService {
     }
   }
 
+  Future<void> sendPasswordResetEmail(BuildContext context, String email) async {
+    try {
+      await auth.sendPasswordResetEmail(email: email);
+      log('Password reset email sent to $email');
+      CustomSnackbar().successSnackbar(
+        context,
+        'Password reset link sent! Check your email inbox.',
+      );
+    } on FirebaseAuthException catch (e) {
+      log('Error sending password reset email: ${e.code}');
+      String errorMessage = 'An error occurred. Please try again.';
+
+      if (e.code == 'invalid-email') {
+        errorMessage = 'The email address is not valid.';
+      }
+
+      if (e.code == 'invalid-email') {
+        CustomSnackbar().failedSnackbar(context, errorMessage);
+      } else {
+        CustomSnackbar().successSnackbar(
+          context,
+          'Password reset link sent! Check your email inbox.',
+        );
+      }
+    }
+  }
+
   static Future<User?> getUserInfo() async {
     return FirebaseAuth.instance.currentUser;
   }
@@ -105,9 +139,12 @@ class FirebaseService {
   }
 
   Future<void> getFirebasePrayers() async {
+    print('start===');
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
+      print('yes===');
+
       final now = DateTime.now();
       final year = now.year;
       final month = now.month;
