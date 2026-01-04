@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shalat_essential/components/rotating_dot.dart';
 import 'package:shalat_essential/services/colors.dart';
+import 'package:shalat_essential/services/firebase_service.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -26,50 +26,7 @@ class _RegisterState extends State<Register> {
     });
   }
 
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
 
-    setState(() => isLoading = true);
-
-    try {
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
-
-      final user = credential.user;
-      if (user != null) {
-        await FirebaseFirestore.instance
-            .collection("users")
-            .doc(user.uid)
-            .set({
-          "nickname": nicknameController.text.trim(),
-          "email": emailController.text.trim(),
-          "createdAt": FieldValue.serverTimestamp(),
-        });
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Registration successful")),
-        );
-        Navigator.pop(context);
-      }
-    } on FirebaseAuthException catch (e) {
-      String message = "An error occurred";
-      if (e.code == 'email-already-in-use') {
-        message = "Email already in use";
-      } else if (e.code == 'weak-password') {
-        message = "Password too weak";
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -233,15 +190,24 @@ class _RegisterState extends State<Register> {
                     onPressed: () async{
                       if (_formKey.currentState!.validate()) {
                         loginLoading();
-                        await _register();
+                        bool success = await FirebaseService().doRegister(
+                            context,
+                            emailController.text,
+                            passwordController.text,
+                            nicknameController.text);
                         loginLoading();
+                        if(success){
+                          Navigator.pop(context, true);
+                        }
                       }
                     },
                     child: isLoading
-                        ? RotatingDot()
+                        ? RotatingDot(scale: 20,)
                         : Text('Register', style: Theme.of(context).primaryTextTheme.labelLarge),
                   ),
                 ),
+                Spacer(),
+                Text('© 2025 @andrehaliim')
               ],
             ),
           ),

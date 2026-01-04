@@ -318,16 +318,13 @@ class _NewHomePageState extends State<NewHomePage> {
                       initAll();
                     }
                   } else {
-                    bool refresh = await Navigator.push(
+                    Navigator.push(
                       context,
                       PageTransition(
                         type: PageTransitionType.rightToLeft,
                         childBuilder: (context) => History(),
                       ),
                     );
-                    if(refresh){
-                      initAll();
-                    }
                   }
                 },
                 child: Material(
@@ -397,7 +394,7 @@ class _NewHomePageState extends State<NewHomePage> {
                         style: Theme.of(context).elevatedButtonTheme.style,
                         onPressed: trackPrayerFunction,
                         child: isLoadingTracker
-                            ? RotatingDot()
+                            ? RotatingDot(scale: 20)
                             : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -414,7 +411,7 @@ class _NewHomePageState extends State<NewHomePage> {
           ),
         ),
       )
-          : Center(child: RotatingDot())
+          : Center(child: RotatingDot(scale: 50))
     );
   }
 

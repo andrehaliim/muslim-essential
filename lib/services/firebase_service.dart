@@ -1,11 +1,86 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:shalat_essential/components/custom_snackbar.dart';
 
 import '../main.dart';
 import '../objectbox.g.dart';
 import '../objectbox/prayer_database.dart';
 
 class FirebaseService {
+  final auth = FirebaseAuth.instance;
+
+  Future<bool> doLogin(BuildContext context, String xemail, String xpassword) async {
+    try {
+      await auth.signInWithEmailAndPassword(
+        email: xemail,
+        password: xpassword,
+      );
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final idToken = await user.getIdToken();
+        final idTokenResult = await user.getIdTokenResult();
+        log("Token: $idToken");
+        log("Expires at: ${idTokenResult.expirationTime}");
+        return true;
+      }
+      return false;
+    } on FirebaseAuthException catch (e) {
+      log("Firebase Auth Error Code: ${e.code}"); // Log the code for debugging
+
+      String errorMessage;
+      switch (e.code) {
+        case 'invalid-email':
+          errorMessage = 'The email address is not valid.';
+          break;
+        case 'user-disabled':
+          errorMessage = 'This user account has been disabled.';
+          break;
+        case 'too-many-requests':
+          errorMessage = 'Too many login attempts. Please try again later.';
+          break;
+        case 'invalid-credential':
+          errorMessage = 'Incorrect email or password.';
+          break;
+        default:
+          errorMessage = 'An unknown error occurred. Please try again.';
+      }
+      CustomSnackbar().failedSnackbar(context, errorMessage);
+      return false;
+    }
+  }
+
+  Future<bool> doRegister(BuildContext context, String xemail, String xpassword, String xnickname) async {
+    try {
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: xemail,
+        password: xpassword,
+      );
+
+      final user = credential.user;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .set({
+          "nickname": xnickname,
+          "email": xemail,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
+        CustomSnackbar().successSnackbar(context, "Registration successful");
+        Navigator.pop(context);
+        return true;
+      }
+      CustomSnackbar().failedSnackbar(context, "Registration failed");
+      return false;
+    } on FirebaseAuthException catch (e) {
+      CustomSnackbar().failedSnackbar(context, e.message ?? '');
+      return false;
+    }
+  }
+
   static Future<User?> getUserInfo() async {
     return FirebaseAuth.instance.currentUser;
   }

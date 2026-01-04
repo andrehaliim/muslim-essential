@@ -5,7 +5,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 class RotatingDot extends StatefulWidget {
-  const RotatingDot({super.key});
+  final double scale;
+  const RotatingDot({super.key, required this.scale});
 
   @override
   State<RotatingDot> createState() => _RotatingDotState();
@@ -37,8 +38,8 @@ class _RotatingDotState extends State<RotatingDot> with SingleTickerProviderStat
         return Transform.rotate(
           angle: _controller.value * 2 * pi,
           child: SizedBox(
-            width: 50,
-            height: 50,
+            width: widget.scale,
+            height: widget.scale,
             child: Stack(
               alignment: Alignment.center,
               children: [

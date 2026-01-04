@@ -1,10 +1,9 @@
-import 'dart:developer';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:shalat_essential/components/custom_snackbar.dart';
 import 'package:shalat_essential/components/rotating_dot.dart';
 import 'package:shalat_essential/services/colors.dart';
+import 'package:shalat_essential/services/firebase_service.dart';
 import 'package:shalat_essential/views/register.dart';
 
 class Login extends StatefulWidget {
@@ -20,7 +19,6 @@ class _LoginState extends State<Login> {
   final passwordController = TextEditingController();
   bool obscurePassword = true;
   bool isLoading = false;
-  final auth = FirebaseAuth.instance;
 
   void loginLoading() {
     setState(() {
@@ -28,29 +26,6 @@ class _LoginState extends State<Login> {
     });
   }
 
-  Future<bool> doLogin() async {
-    try {
-      await auth.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final idToken = await user.getIdToken();
-        final idTokenResult = await user.getIdTokenResult();
-        log("Token: $idToken");
-        log("Expires at: ${idTokenResult.expirationTime}");
-        return true;
-      }
-      return false;
-    } on FirebaseAuthException catch (e) {
-      log(e.message ?? '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Login failed")),
-      );
-      return false;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +37,7 @@ class _LoginState extends State<Login> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        Navigator.pop(context, true);
+        Navigator.pop(context, false);
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
@@ -186,18 +161,20 @@ class _LoginState extends State<Login> {
                     onPressed: () async{
                       if (_formKey.currentState!.validate()) {
                         loginLoading();
-                        bool success = await doLogin();
-                        if(success){
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Login successful")),
-                          );
-                        }
+                        bool success = await FirebaseService().doLogin(
+                            context,
+                            emailController.text.trim(),
+                            passwordController.text.trim()
+                        );
                         loginLoading();
-                        Navigator.pop(context,true);
+                        if(success){
+                          CustomSnackbar().successSnackbar(context, 'Login success');
+                          Navigator.pop(context,true);
+                        }
                       }
                     },
                     child: isLoading
-                        ? RotatingDot()
+                        ? RotatingDot(scale: 20)
                         : Text('Login', style: Theme.of(context).primaryTextTheme.labelLarge),
                   ),
                 ),
@@ -230,6 +207,9 @@ class _LoginState extends State<Login> {
                     child: const Text('Register'),
                   ),
                 ),
+                Spacer(),
+
+                Text('© 2025 @andrehaliim')
               ],
             ),
           ),
