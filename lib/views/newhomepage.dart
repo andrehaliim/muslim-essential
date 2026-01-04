@@ -17,6 +17,7 @@ import 'package:timezone/data/latest.dart' as tzl;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../components/compass.dart';
+import '../components/custom_snackbar.dart';
 import '../main.dart';
 import '../objectbox.g.dart';
 import '../objectbox/prayer_database.dart';
@@ -180,9 +181,7 @@ class _NewHomePageState extends State<NewHomePage> {
                     if (mounted) {
                         await PrayerService().resetDonePrayerDatabase();
                         initAll();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Logout successful")),
-                        );
+                        CustomSnackbar().successSnackbar(context, 'Logout successful');
                     }
                   }),
                   child: Icon(Icons.logout),
@@ -489,17 +488,13 @@ class _NewHomePageState extends State<NewHomePage> {
           body: "$prayerName prayer is at ${DateFormat.Hm().format(time)}.",
           scheduledTime: time,
         );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Notification for $prayerName is enabled", style: TextStyle(color: Colors.white),), backgroundColor: Colors.green, duration: Duration(seconds: 1),),
-      );
+      CustomSnackbar().successSnackbar(context, "Notification for $prayerName is enabled");
       WidgetUpdate().updateWidgetPrayerNotification(name: prayerName, notification: true);
     } else {
       // Cancel notification
       final plugin = FlutterLocalNotificationsPlugin();
       await plugin.cancel(id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Notification for $prayerName is disabled", style: TextStyle(color: Colors.white)), backgroundColor: Colors.red, duration: Duration(seconds: 1)),
-      );
+      CustomSnackbar().failedSnackbar(context, "Notification for $prayerName is disabled");
       WidgetUpdate().updateWidgetPrayerNotification(name: prayerName, notification: false);
     }
   }

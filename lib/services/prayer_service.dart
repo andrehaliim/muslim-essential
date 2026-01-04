@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:lat_lng_to_timezone/lat_lng_to_timezone.dart' as tzmap;
+import 'package:shalat_essential/components/custom_snackbar.dart';
 import 'package:timezone/data/latest.dart' as tzl;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -21,9 +22,7 @@ class PrayerService {
     String date = "${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}";
     final todayPrayer = prayerBox.query(PrayerDatabase_.date.equals(date)).build().findFirst();
     if (todayPrayer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Prayer data not available"))
-      );
+      CustomSnackbar().failedSnackbar(context, 'Prayer data not available');
       return false;
     }
 
@@ -48,9 +47,7 @@ class PrayerService {
 
     if (todayDoc.exists) {
       if (todayDoc.data()?.containsKey(currentPrayer) == true && todayDoc.data()?[currentPrayer] == 1) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Already tracked prayer")),
-        );
+        CustomSnackbar().failedSnackbar(context, 'Already tracked prayer');
         return true;
       }
 
@@ -59,9 +56,7 @@ class PrayerService {
         currentPrayer: 1,
       }, SetOptions(merge: true));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("$currentPrayer tracked successfully")),
-      );
+      CustomSnackbar().successSnackbar(context, '$currentPrayer tracked successfully');
     } else {
       Map<String, dynamic> toMap =
          {
