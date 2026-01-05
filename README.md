@@ -7,7 +7,7 @@ prayer tracking feature. Designed for simplicity and offline functionality.
 ## 📸 Screenshots
 
 ### Main menu
-![Main Menu](./assets/main_menu.jpg)
+<img src="./assets/main_menu.jpg" alt="Main Menu" width="50%"/>
 
 ## ✨ Features
 
