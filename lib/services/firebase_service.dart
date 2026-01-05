@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -23,10 +21,6 @@ class FirebaseService {
         final userDocRef = FirebaseFirestore.instance.collection("users").doc(user.uid);
         final doc = await userDocRef.get();
         if (doc.exists) {
-          final idToken = await user.getIdToken();
-          final idTokenResult = await user.getIdTokenResult();
-          log("Token: $idToken");
-          log("Expires at: ${idTokenResult.expirationTime}");
           return true;
         } else {
           CustomSnackbar().failedSnackbar(context, 'Incorrect email or password.');
@@ -35,7 +29,7 @@ class FirebaseService {
       }
       return false;
     } on FirebaseAuthException catch (e) {
-      log("Firebase Auth Error Code: ${e.code}");
+     // log("Firebase Auth Error Code: ${e.code}");
 
       String errorMessage;
       switch (e.code) {
@@ -91,13 +85,13 @@ class FirebaseService {
   Future<void> sendPasswordResetEmail(BuildContext context, String email) async {
     try {
       await auth.sendPasswordResetEmail(email: email);
-      log('Password reset email sent to $email');
+     // log('Password reset email sent to $email');
       CustomSnackbar().successSnackbar(
         context,
         'Password reset link sent! Check your email inbox.',
       );
     } on FirebaseAuthException catch (e) {
-      log('Error sending password reset email: ${e.code}');
+     // log('Error sending password reset email: ${e.code}');
       String errorMessage = 'An error occurred. Please try again.';
 
       if (e.code == 'invalid-email') {
@@ -139,12 +133,9 @@ class FirebaseService {
   }
 
   Future<void> getFirebasePrayers() async {
-    print('start===');
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      print('yes===');
-
       final now = DateTime.now();
       final year = now.year;
       final month = now.month;

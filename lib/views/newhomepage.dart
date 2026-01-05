@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,12 +6,12 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:lat_lng_to_timezone/lat_lng_to_timezone.dart' as tzmap;
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:page_transition/page_transition.dart';
-import 'package:receive_intent/receive_intent.dart' as receive_intent;
 import 'package:muslim_essential/components/rotating_dot.dart';
 import 'package:muslim_essential/objectbox/location_database.dart';
 import 'package:muslim_essential/services/prayer_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:page_transition/page_transition.dart';
+import 'package:receive_intent/receive_intent.dart' as receive_intent;
 import 'package:timezone/data/latest.dart' as tzl;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -145,10 +144,10 @@ class _NewHomePageState extends State<NewHomePage> {
     }
 
     if (shouldFetchNewData) {
-      log('=== Fetching new data ===');
+     // log('=== Fetching new data ===');
       await PrayerService.getmuslimDataForMonth(position, firebaseUser?.uid);
     } else {
-      log('=== No fetching data ===');
+     // log('=== No fetching data ===');
     }
 
     // 3. Read today's record from db
@@ -429,7 +428,7 @@ class _NewHomePageState extends State<NewHomePage> {
         prayerName = "Dhuhr";
         time = dhuhr;
         isNotificationEnabled = !todayPrayer!.notifDhuhr;
-        log(isNotificationEnabled.toString());
+       // log(isNotificationEnabled.toString());
         break;
       case 3:
         prayerName = "Asr";

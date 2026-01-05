@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -174,7 +172,7 @@ class PrayerService {
           ..doneIsha = data['isha'] == 1;
       }
 
-      log('Prayer data for date $date is successfully inserted');
+     // log('Prayer data for date $date is successfully inserted');
       prayerBox.put(prayerData);
     }
   }
