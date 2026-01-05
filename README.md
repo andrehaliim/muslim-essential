@@ -13,13 +13,13 @@ prayer tracking feature. Designed for simplicity and offline functionality.
 <table>
   <tr>
     <td>
-      <img src="./assets/login_menu.jpg" alt="Screenshot 1" width="33.3%">
+      <img src="./assets/login_menu.jpg" alt="Screenshot 1" width="100%">
     </td>
     <td>
-      <img src="./assets/register_menu.jpg" alt="Screenshot 2" width="33.3%">
+      <img src="./assets/register_menu.jpg" alt="Screenshot 2" width="100%">
     </td>
     <td>
-      <img src="./assets/forgot_menu.jpg" alt="Screenshot 3" width="33.3%">
+      <img src="./assets/forgot_menu.jpg" alt="Screenshot 3" width="100%">
     </td>
   </tr>
 </table>
