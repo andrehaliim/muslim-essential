@@ -4,8 +4,10 @@ A modern, lightweight prayer time app for Muslims. It automatically displays dai
 based on the user's location, complete with adhan notifications, a Qibla compass, and a personal 
 prayer tracking feature. Designed for simplicity and offline functionality.
 
-App Screenshot (Suggestion: Replace the placeholder above with actual screenshots or a GIF of your app in action. Visuals are highly effective.)
+## 📸 Screenshots
 
+### Main menu
+![Main Menu](./assets/main_menu.jpg)
 
 ## ✨ Features
 
