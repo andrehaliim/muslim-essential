@@ -24,6 +24,24 @@ prayer tracking feature. Designed for simplicity and offline functionality.
   </tr>
 </table>
 
+### After Login and Prayer Tracking History
+<table>
+  <tr>
+    <td>
+      <img src="./assets/main_menu_user.jpg" alt="Screenshot 4" width="100%">
+    </td>
+    <td>
+      <img src="./assets/history_menu.jpg" alt="Screenshot 5" width="100%">
+    </td>
+  </tr>
+</table>
+
+### Qibla Compass
+<img src="./assets/qibla_compass.jpg" alt="Screenshot 6" width="50%">
+
+### Widget
+<img src="./assets/widget.jpg" alt="Screenshot 7" width="50%">
+
 ## ✨ Features
 
 - **Prayer Times**: Automatically fetches and displays prayer times based on your device's current location.
