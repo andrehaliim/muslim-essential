@@ -14,7 +14,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
 
 import 'objectbox/prayer_database.dart';
-import 'services/firebase_options.dart';
+import 'firebase_options.dart';
 import 'services/notification_service.dart';
 
 const updateWidgetTask = "updateWidgetTask";
@@ -100,7 +100,7 @@ void callbackDispatcher() {
 
           // Save extra info
           await HomeWidget.saveWidgetData<String>('location_name', locationData.name);
-          await HomeWidget.saveWidgetData<String>('date_time', DateFormat('dd MMM yyyy').format(DateTime.now()));
+          await HomeWidget.saveWidgetData<String>('date_time', DateFormat('dd MMMM yyyy').format(DateTime.now()));
           await HomeWidget.updateWidget(name: 'PrayerWidgetProvider');
           return Future.value(true);
 
@@ -113,6 +113,9 @@ void callbackDispatcher() {
         title: "Prayer Times Error",
         body: "$e, $s",
       );
+      await HomeWidget.saveWidgetData<String>('location_name', 'APP ERROR');
+      await HomeWidget.saveWidgetData<String>('date_time', 'PLEASE SEE THE LOG');
+      await HomeWidget.updateWidget(name: 'PrayerWidgetProvider');
       return Future.value(false);
     }
   });
