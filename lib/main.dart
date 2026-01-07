@@ -3,18 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:muslim_essential/objectbox.g.dart';
 import 'package:muslim_essential/objectbox/location_database.dart';
 import 'package:muslim_essential/objectbox/store.dart';
 import 'package:muslim_essential/services/themedata.dart';
 import 'package:muslim_essential/views/newhomepage.dart';
+import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tzl;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
 
-import 'objectbox/prayer_database.dart';
 import 'firebase_options.dart';
+import 'objectbox/prayer_database.dart';
 import 'services/notification_service.dart';
 
 const updateWidgetTask = "updateWidgetTask";
@@ -142,7 +142,7 @@ void main() async {
 
   // Schedule the daily task
   final now = DateTime.now();
-  final tomorrow = DateTime(now.year, now.month, now.day + 1, 0, 1);
+  final tomorrow = DateTime(now.year, now.month, now.day + 1, 1, 0);
   final updateWidgetDelay = tomorrow.difference(now);
 
   await Workmanager().registerPeriodicTask(

@@ -509,7 +509,9 @@ class _NewHomePageState extends State<NewHomePage> {
       );
       if(refresh){
         initAll();
+        await PrayerService().trackPrayer(context, firebaseUser!.uid);
         await FirebaseService().getFirebasePrayers();
+        await calculateTodayPrayer();
       }
     } else {
       setState(() {
