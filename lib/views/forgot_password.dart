@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:muslim_essential/components/colors.dart';
 import 'package:muslim_essential/components/rotating_dot.dart';
-import 'package:muslim_essential/services/colors.dart';
 import 'package:muslim_essential/services/firebase_service.dart';
 
 class ForgotPassword extends StatefulWidget {

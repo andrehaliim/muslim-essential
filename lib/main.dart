@@ -3,12 +3,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
+import 'package:muslim_essential/components/themedata.dart';
 import 'package:muslim_essential/objectbox.g.dart';
 import 'package:muslim_essential/objectbox/location_database.dart';
 import 'package:muslim_essential/objectbox/store.dart';
-import 'package:muslim_essential/services/themedata.dart';
-import 'package:muslim_essential/views/newhomepage.dart';
-import 'package:provider/provider.dart';
+import 'package:muslim_essential/services/location_service.dart';
+import 'package:muslim_essential/views/forgot_password.dart';
+import 'package:muslim_essential/views/history.dart';
+import 'package:muslim_essential/views/homepage.dart';
+import 'package:muslim_essential/views/login.dart';
+import 'package:muslim_essential/views/register.dart';
 import 'package:timezone/data/latest.dart' as tzl;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
@@ -123,28 +127,19 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  objectbox = await ObjectBox.create();
-
-  if (kDebugMode && Admin.isAvailable()) {
-    objectBoxAdmin = Admin(objectbox.store);
-  }
-
-  // Initialize WorkManager
-  await Workmanager().initialize(
-    callbackDispatcher,
-  );
-
-  // Then init other services for the main app UI
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await LocationService().locationPermission();
   await NotificationService.init();
 
-  // Schedule the daily task
+  objectbox = await ObjectBox.create();
+  objectBoxAdmin = kDebugMode && Admin.isAvailable() ? Admin(objectbox.store) : null;
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   final now = DateTime.now();
   final tomorrow = DateTime(now.year, now.month, now.day + 1, 1, 0);
   final updateWidgetDelay = tomorrow.difference(now);
 
+  await Workmanager().initialize(callbackDispatcher);
   await Workmanager().registerPeriodicTask(
     updateWidgetTask,
     updateWidgetTask,
@@ -153,10 +148,7 @@ void main() async {
   );
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
-      child: const MyApp(),
-    ),
+    const MyApp(),
   );
 }
 
@@ -166,15 +158,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
       title: 'Muslim Essential',
-      theme: appLightTheme,
       darkTheme: appDarkTheme,
       themeMode: ThemeMode.dark,
-      debugShowCheckedModeBanner: false,
-      home: NewHomePage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const Homepage(),
+        '/login': (context) => const Login(),
+        '/history': (context) => const History(),
+        '/register': (context) => const Register(),
+        '/forgot': (context) => const ForgotPassword(),
+      },
     );
   }
 }

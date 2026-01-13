@@ -20,8 +20,27 @@ class WidgetUpdate {
     );
   }
 
-  Future<void> updateWidgetPrayerNotification({required String name,required bool notification}) async {
-    await HomeWidget.saveWidgetData<bool>('${name.toLowerCase()}_notification', notification);
+  Future<void> updateWidgetLocation({required String location}) async {
+    await HomeWidget.saveWidgetData<String>('location_name', location);
+    await HomeWidget.updateWidget(
+      name: 'PrayerWidgetProvider',
+    );
+  }
+
+  Future<void> updateWidgetDate() async {
+    final date = DateFormat("dd MMMM yyyy").format(DateTime.now());
+    await HomeWidget.saveWidgetData<String>('date_time', date);
+    await HomeWidget.updateWidget(
+      name: 'PrayerWidgetProvider',
+    );
+  }
+
+  Future<void> updateWidgetPrayerNotification({required PrayerDatabase prayerDatabase}) async {
+    await HomeWidget.saveWidgetData<bool>('fajr_notification', prayerDatabase.notifFajr);
+    await HomeWidget.saveWidgetData<bool>('dhuhr_notification', prayerDatabase.notifAsr);
+    await HomeWidget.saveWidgetData<bool>('asr_notification', prayerDatabase.notifAsr);
+    await HomeWidget.saveWidgetData<bool>('maghrib_notification', prayerDatabase.notifMaghrib);
+    await HomeWidget.saveWidgetData<bool>('isha_notification', prayerDatabase.notifIsha);
     await HomeWidget.updateWidget(
       name: 'PrayerWidgetProvider',
     );
@@ -29,7 +48,7 @@ class WidgetUpdate {
 
   Future<void> updateWidgetPrayerTracker({required PrayerDatabase prayerDatabase}) async {
       await HomeWidget.saveWidgetData<bool>('fajr_check', prayerDatabase.doneFajr);
-      await HomeWidget.saveWidgetData<bool>('dhuhr_check', prayerDatabase.doneAsr);
+      await HomeWidget.saveWidgetData<bool>('dhuhr_check', prayerDatabase.doneDhuhr);
       await HomeWidget.saveWidgetData<bool>('asr_check', prayerDatabase.doneAsr);
       await HomeWidget.saveWidgetData<bool>('maghrib_check', prayerDatabase.doneMaghrib);
       await HomeWidget.saveWidgetData<bool>('isha_check', prayerDatabase.doneIsha);
@@ -39,10 +58,4 @@ class WidgetUpdate {
     );
   }
 
-  Future<void> updateWidgetLocation({required String location}) async {
-    await HomeWidget.saveWidgetData<String>('location_name', location);
-    await HomeWidget.updateWidget(
-      name: 'PrayerWidgetProvider',
-    );
-  }
 }

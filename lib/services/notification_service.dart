@@ -70,23 +70,11 @@ class NotificationService {
                   icon: 'ic_stat_prayer',
               )),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle);
-
-      logNotification(scheduledTime, id, null);
     }
   }
 
   static Future<void> cancel(int id) async {
     await _notifications.cancel(id);
-  }
-
-  static Future<List<PendingNotificationRequest>> getPendingNotifications() async {
-    return await _notifications.pendingNotificationRequests();
-  }
-
-  static void logNotification(DateTime dateTime, int id, bool? isInit) {
-    //final dateStr = DateFormat('yyyy-MM-dd').format(dateTime);
-    //final timeStr = DateFormat('HH:mm:ss').format(dateTime);
-   // log("🔔 Notification scheduled for $dateStr at $timeStr (ID: $id) is init : $isInit");
   }
 
   static Future<void> cancelAllNotifications() async {

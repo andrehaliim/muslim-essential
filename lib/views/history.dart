@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:muslim_essential/services/colors.dart';
+import 'package:muslim_essential/components/colors.dart';
 
 import '../main.dart';
 import '../objectbox/prayer_database.dart';

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../services/colors.dart';
+import 'colors.dart';
 
 class Compass extends StatefulWidget {
   const Compass({super.key});
