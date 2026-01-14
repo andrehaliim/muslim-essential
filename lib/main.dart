@@ -3,8 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
+import 'package:muslim_essential/components/themedata.dart';
 import 'package:muslim_essential/objectbox.g.dart';
 import 'package:muslim_essential/objectbox/store.dart';
+import 'package:muslim_essential/views/forgot_password.dart';
+import 'package:muslim_essential/views/history.dart';
+import 'package:muslim_essential/views/login.dart';
+import 'package:muslim_essential/views/register.dart';
 import 'package:timezone/data/latest.dart' as tzl;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
@@ -166,8 +171,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Muslim Essential',
-      debugShowCheckedModeBanner: false,
-      home: Homepage(),
+      darkTheme: appDarkTheme,
+      themeMode: ThemeMode.dark,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const Homepage(),
+        '/login': (context) => const Login(),
+        '/history': (context) => const History(),
+        '/register': (context) => const Register(),
+        '/forgot': (context) => const ForgotPassword(),
+      },
     );
   }
 }
