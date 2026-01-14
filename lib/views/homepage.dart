@@ -116,11 +116,15 @@ class _HomepageState extends State<Homepage> {
               child: GestureDetector(
                 onTap: () => FirebaseService().logout().then((_) async {
                   if (mounted) {
-                    await PrayerService().resetDonePrayerDatabase();
                     CustomSnackbar().successSnackbar(context, 'Logout successful');
-                    setState(() {
-                      _initFuture = _initAll();
-                    });
+                    await PrayerService().resetDonePrayerDatabase();
+                    await _checkUserAvailability();
+                    if (_firebaseUser == null) {
+                      setState(() {
+                        _initFuture = _initAll();
+                        _nickname = 'Guest';
+                      });
+                    }
                   }
                 }),
                 child: Icon(Icons.logout),

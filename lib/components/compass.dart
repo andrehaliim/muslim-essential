@@ -65,7 +65,7 @@ class _CompassState extends State<Compass> {
       )
     );
     _updateBearing(pos);
-
+    if (!mounted) return;
     _posSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
@@ -81,6 +81,7 @@ class _CompassState extends State<Compass> {
       _kaabaLat,
       _kaabaLon,
     );
+    if (!mounted) return;
     setState(() {
       _bearingToQibla = bearing;
     });
