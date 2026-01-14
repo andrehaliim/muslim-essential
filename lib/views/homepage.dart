@@ -520,6 +520,7 @@ class _HomepageState extends State<Homepage> {
     setState(() {
       _todayPrayerData = todayData;
       _yesterdayPrayerData = yesterdayData;
+      if(todayData != null) {NotificationService().scheduleAllNotification(todayData);}
     });
   }
 

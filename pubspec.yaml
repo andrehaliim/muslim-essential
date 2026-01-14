@@ -3,7 +3,7 @@ description: "A mobile prayer time app that automatically displays daily prayer 
 
 publish_to: 'none'
 
-version: 1.1.1
+version: 1.1.2
 
 environment:
   sdk: ^3.8.1

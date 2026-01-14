@@ -1,12 +1,17 @@
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
+import 'package:muslim_essential/objectbox/prayer_database.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
+    tz.initializeTimeZones();
+
     const androidInit = AndroidInitializationSettings('ic_stat_prayer');
     const initSettings = InitializationSettings(android: androidInit);
 
@@ -45,40 +50,93 @@ class NotificationService {
     );
   }
 
-  static Future<void> scheduleNotification({required int id, required String title, required String body, required DateTime? scheduledTime}) async {
-    if(scheduledTime != null){
-      var tzScheduled = tz.TZDateTime.from(scheduledTime, tz.local).subtract(const Duration(minutes: 5));
+  static Future<void> scheduleNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime? scheduledTime,
+  }) async {
+    if (scheduledTime == null) return;
 
-      if (tzScheduled.isBefore(tz.TZDateTime.now(tz.local))) {
-        tzScheduled = tzScheduled.add(const Duration(days: 1));
-      }
+    final tzScheduled =
+    tz.TZDateTime.from(scheduledTime, tz.local)
+        .subtract(const Duration(minutes: 5));
 
-      await _notifications.zonedSchedule(
-          id,
-          title,
-          body,
-          tzScheduled,
-          const NotificationDetails(
-              android: AndroidNotificationDetails(
-                  'your channel id',
-                  'your channel name',
-                  channelDescription: 'your channel description',
-                  importance: Importance.max,
-                  priority: Priority.high,
-                  playSound: true,
-                  enableVibration: true,
-                  icon: 'ic_stat_prayer',
-              )),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle);
+    if (tzScheduled.isBefore(tz.TZDateTime.now(tz.local))) {
+      //log("⏭️ Notification skipped (time already passed): $tzScheduled");
+      return;
     }
+
+    await _notifications.zonedSchedule(
+      id,
+      title,
+      body,
+      tzScheduled,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'your channel id',
+          'your channel name',
+          channelDescription: 'your channel description',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          icon: 'ic_stat_prayer',
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
   }
+
 
   static Future<void> cancel(int id) async {
     await _notifications.cancel(id);
   }
 
-  static Future<void> cancelAllNotifications() async {
+  Future<void> cancelAllNotifications() async {
     await _notifications.cancelAll();
-   // log("All scheduled notifications have been cancelled.");
+  }
+
+  Future <void> scheduleAllNotification(PrayerDatabase today) async {
+    if(today.notifFajr){
+      NotificationService.scheduleNotification(
+        id: 1,
+        title: "Prayer Reminder",
+        body: "Fajr prayer is at ${DateFormat.Hm().format(today.fajr)}.",
+        scheduledTime: today.fajr,
+      );
+    }
+    if(today.notifDhuhr){
+      NotificationService.scheduleNotification(
+        id: 2,
+        title: "Prayer Reminder",
+        body: "Dhuhr prayer is at ${DateFormat.Hm().format(today.dhuhr)}.",
+        scheduledTime: today.dhuhr,
+      );
+    }
+    if(today.notifAsr) {
+      NotificationService.scheduleNotification(
+        id: 3,
+        title: "Prayer Reminder",
+        body: "Asr prayer is at ${DateFormat.Hm().format(today.asr)}.",
+        scheduledTime: today.asr,
+      );
+    }
+    if(today.notifMaghrib) {
+      NotificationService.scheduleNotification(
+        id: 4,
+        title: "Prayer Reminder",
+        body: "Maghrib prayer is at ${DateFormat.Hm().format(today.maghrib)}.",
+        scheduledTime: today.maghrib,
+      );
+    }
+    if(today.notifIsha) {
+      NotificationService.scheduleNotification(
+        id: 5,
+        title: "Prayer Reminder",
+        body: "Isha prayer is at ${DateFormat.Hm().format(today.isha)}.",
+        scheduledTime: today.isha,
+      );
+    }
   }
 }
