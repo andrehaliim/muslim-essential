@@ -58,4 +58,13 @@ class WidgetUpdate {
     );
   }
 
+  Future<void> schedulePrayerTimeUpdate({required String name, required int index, required DateTime time}) async {
+    final ymd = DateFormat('yyyyMMdd').format(time);
+    final key = '${ymd}_${index}_$name';
+
+    await HomeWidget.saveWidgetData(
+      key,
+      DateFormat.Hm().format(time),
+    );
+  }
 }

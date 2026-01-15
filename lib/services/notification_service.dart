@@ -1,8 +1,8 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
-import 'package:muslim_essential/objectbox/prayer_database.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -63,7 +63,7 @@ class NotificationService {
         .subtract(const Duration(minutes: 5));
 
     if (tzScheduled.isBefore(tz.TZDateTime.now(tz.local))) {
-      //log("⏭️ Notification skipped (time already passed): $tzScheduled");
+      log("⏭️ Notification skipped (time already passed): $tzScheduled");
       return;
     }
 
@@ -97,46 +97,18 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  Future <void> scheduleAllNotification(PrayerDatabase today) async {
-    if(today.notifFajr){
+  Future <void> schedulePrayerNotif({required String name, required String id, required DateTime time, required bool isEnabled}) async {
+    final ymd = DateFormat('yyyyMMdd').format(time);
+    final notificationId = int.parse('$ymd$id');
+
+    if(isEnabled) {
       NotificationService.scheduleNotification(
-        id: 1,
+        id: notificationId,
         title: "Prayer Reminder",
-        body: "Fajr prayer is at ${DateFormat.Hm().format(today.fajr)}.",
-        scheduledTime: today.fajr,
+        body: "$name prayer is at ${DateFormat.Hm().format(time)}.",
+        scheduledTime: time,
       );
-    }
-    if(today.notifDhuhr){
-      NotificationService.scheduleNotification(
-        id: 2,
-        title: "Prayer Reminder",
-        body: "Dhuhr prayer is at ${DateFormat.Hm().format(today.dhuhr)}.",
-        scheduledTime: today.dhuhr,
-      );
-    }
-    if(today.notifAsr) {
-      NotificationService.scheduleNotification(
-        id: 3,
-        title: "Prayer Reminder",
-        body: "Asr prayer is at ${DateFormat.Hm().format(today.asr)}.",
-        scheduledTime: today.asr,
-      );
-    }
-    if(today.notifMaghrib) {
-      NotificationService.scheduleNotification(
-        id: 4,
-        title: "Prayer Reminder",
-        body: "Maghrib prayer is at ${DateFormat.Hm().format(today.maghrib)}.",
-        scheduledTime: today.maghrib,
-      );
-    }
-    if(today.notifIsha) {
-      NotificationService.scheduleNotification(
-        id: 5,
-        title: "Prayer Reminder",
-        body: "Isha prayer is at ${DateFormat.Hm().format(today.isha)}.",
-        scheduledTime: today.isha,
-      );
+      log("🔔 Notification is set for ${DateFormat('yyyy-MM-dd').format(time)} at $time with id : $notificationId 🔔");
     }
   }
 }

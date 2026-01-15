@@ -10,13 +10,9 @@ import 'package:muslim_essential/views/forgot_password.dart';
 import 'package:muslim_essential/views/history.dart';
 import 'package:muslim_essential/views/login.dart';
 import 'package:muslim_essential/views/register.dart';
-import 'package:timezone/data/latest.dart' as tzl;
-import 'package:timezone/timezone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
 
 import 'firebase_options.dart';
-import 'objectbox/location_database.dart';
-import 'objectbox/prayer_database.dart';
 import 'services/location_service.dart';
 import 'services/notification_service.dart';
 import 'views/homepage.dart';
@@ -24,143 +20,91 @@ import 'views/homepage.dart';
 const String updateWidgetTask = 'updateWidgetTask';
 
 late ObjectBox objectbox;
+Admin? objectBoxAdmin;
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    ObjectBox? bgObjectBox;
-
     try {
-      // 🌍 Timezone
-      tzl.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
-
-      // 🔥 Firebase
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-
-      // 📦 ObjectBox (background isolate)
-      bgObjectBox = await ObjectBox.open();
-      final prayerBox = bgObjectBox.store.box<PrayerDatabase>();
-      final locationBox = bgObjectBox.store.box<LocationDatabase>();
+      if (task != updateWidgetTask) return false;
 
       final now = DateTime.now();
-      final todayKey = DateFormat('yyyy-MM-dd').format(now);
+      final ymd = DateFormat('yyyyMMdd').format(now);
 
-      final todayPrayer = prayerBox
-          .query(PrayerDatabase_.date.equals(todayKey))
-          .build()
-          .findFirst();
+      await HomeWidget.saveWidgetData(
+        'fajr_time',
+        await HomeWidget.getWidgetData<String>('${ymd}_0_Fajr', defaultValue: '--:--'),
+      );
+      await HomeWidget.saveWidgetData(
+        'dhuhr_time',
+        await HomeWidget.getWidgetData<String>('${ymd}_1_Dhuhr', defaultValue: '--:--'),
+      );
+      await HomeWidget.saveWidgetData(
+        'asr_time',
+        await HomeWidget.getWidgetData<String>('${ymd}_2_Asr', defaultValue: '--:--'),
+      );
+      await HomeWidget.saveWidgetData(
+        'maghrib_time',
+        await HomeWidget.getWidgetData<String>('${ymd}_3_Maghrib', defaultValue: '--:--'),
+      );
+      await HomeWidget.saveWidgetData(
+        'isha_time',
+        await HomeWidget.getWidgetData<String>('${ymd}_4_Isha', defaultValue: '--:--'),
+      );
 
-      final lastLocation = locationBox
-          .query()
-          .order(LocationDatabase_.id, flags: Order.descending)
-          .build()
-          .findFirst();
+      await HomeWidget.saveWidgetData('fajr_check', false);
+      await HomeWidget.saveWidgetData('dhuhr_check', false);
+      await HomeWidget.saveWidgetData('asr_check', false);
+      await HomeWidget.saveWidgetData('maghrib_check', false);
+      await HomeWidget.saveWidgetData('isha_check', false);
 
-      if (task == updateWidgetTask) {
-        // 🔔 Notifications
-        if (todayPrayer != null) {
-          await NotificationService().cancelAllNotifications();
-          await NotificationService().scheduleAllNotification(todayPrayer);
-        }
+      await HomeWidget.saveWidgetData(
+        'date_time',
+        DateFormat('dd MMMM yyyy').format(now),
+      );
 
-        // ♻ Reset prayer tracking
-        await HomeWidget.saveWidgetData('fajr_check', false);
-        await HomeWidget.saveWidgetData('dhuhr_check', false);
-        await HomeWidget.saveWidgetData('asr_check', false);
-        await HomeWidget.saveWidgetData('maghrib_check', false);
-        await HomeWidget.saveWidgetData('isha_check', false);
-
-        // 📱 Widget data
-        await HomeWidget.saveWidgetData(
-          'location_name',
-          lastLocation?.name ?? 'Unknown location',
-        );
-
-        await HomeWidget.saveWidgetData(
-          'date_time',
-          DateFormat('dd MMMM yyyy').format(now),
-        );
-
-        await HomeWidget.updateWidget(name: 'PrayerWidgetProvider');
-        return true;
-      }
-
-      return false;
+      await HomeWidget.updateWidget(name: 'PrayerWidgetProvider');
+      return true;
     } catch (e) {
-      // 🛑 Fail-safe
-      try {
-        await NotificationService.showNotification(
-          id: 99,
-          title: 'Background Error',
-          body: e.toString(),
-        );
-      } catch (_) {}
-
+      await HomeWidget.saveWidgetData(
+        'location_name',
+        e,
+      );
+      await HomeWidget.updateWidget(name: 'PrayerWidgetProvider');
       return false;
-    } finally {
-      // 🔒 ALWAYS close store
-      bgObjectBox?.store.close();
     }
   });
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 🌍 Timezone (UI isolate)
-  tzl.initializeTimeZones();
-  tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
-
-  // 📍 Location permission
   await LocationService().locationPermission();
-
-  // 🔔 Notifications
   await NotificationService.init();
 
-  // 🔥 Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 📦 ObjectBox (UI isolate)
   objectbox = await ObjectBox.open();
+  objectBoxAdmin = kDebugMode && Admin.isAvailable() ? Admin(objectbox.store) : null;
 
-  // 🛠 Admin (debug only)
-  if (kDebugMode && Admin.isAvailable()) {
-    Admin(objectbox.store);
-  }
-
-  // ⏰ Schedule daily background task
-  await _scheduleDailyWidgetUpdate();
-
-  runApp(const MyApp());
-}
-
-Future<void> _scheduleDailyWidgetUpdate() async {
   final now = DateTime.now();
+  final tomorrow = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+  final updateWidgetDelay = tomorrow.difference(now);
 
-  // Run after midnight (01:00 for safety)
-  final nextRun = DateTime(now.year, now.month, now.day + 1, 1);
-  final initialDelay = nextRun.difference(now);
-
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: kDebugMode,
-  );
-
+  await Workmanager().initialize(callbackDispatcher);
   await Workmanager().registerPeriodicTask(
-    updateWidgetTask,
+    'dailyWidgetUpdate',
     updateWidgetTask,
     frequency: const Duration(hours: 24),
-    initialDelay: initialDelay,
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-    backoffPolicy: BackoffPolicy.linear,
-    backoffPolicyDelay: const Duration(minutes: 10),
+    initialDelay: updateWidgetDelay,
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+  );
+
+  runApp(
+    const MyApp(),
   );
 }
 

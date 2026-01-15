@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:lat_lng_to_timezone/lat_lng_to_timezone.dart' as tzmap;
 import 'package:muslim_essential/components/colors.dart';
@@ -73,6 +75,8 @@ class _HomepageState extends State<Homepage> {
     await _getTodayYesterdayPrayerData();
     await _getNextPrayerInfo();
     await _updateAllWidgets();
+    await _cleanOldWidgetPrayerTimes();
+    await _scheduleNext7DaysPrayer();
     _showLoadingInit();
   }
 
@@ -87,6 +91,8 @@ class _HomepageState extends State<Homepage> {
     await _getTodayYesterdayPrayerData();
     await _getNextPrayerInfo();
     await _updateAllWidgets();
+    await _cleanOldWidgetPrayerTimes();
+    await _scheduleNext7DaysPrayer();
     _showLoadingInit();
   }
 
@@ -279,31 +285,31 @@ class _HomepageState extends State<Homepage> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 GestureDetector(
-                                  onTap: () => _toggleNotification(1),
+                                  onTap: () => _toggleNotification(0),
                                   child: (_todayPrayerData?.notifFajr ?? false)
                                       ? Icon(Icons.notifications_active_outlined, size: 20)
                                       : Icon(Icons.notifications_off_outlined, size: 20),
                                 ),
                                 GestureDetector(
-                                  onTap: () => _toggleNotification(2),
+                                  onTap: () => _toggleNotification(1),
                                   child: (_todayPrayerData?.notifDhuhr ?? false)
                                       ? Icon(Icons.notifications_active_outlined, size: 20)
                                       : Icon(Icons.notifications_off_outlined, size: 20),
                                 ),
                                 GestureDetector(
-                                  onTap: () => _toggleNotification(3),
+                                  onTap: () => _toggleNotification(2),
                                   child: (_todayPrayerData?.notifAsr ?? false)
                                       ? Icon(Icons.notifications_active_outlined, size: 20)
                                       : Icon(Icons.notifications_off_outlined, size: 20),
                                 ),
                                 GestureDetector(
-                                  onTap: () => _toggleNotification(4),
+                                  onTap: () => _toggleNotification(3),
                                   child: (_todayPrayerData?.notifMaghrib ?? false)
                                       ? Icon(Icons.notifications_active_outlined, size: 20)
                                       : Icon(Icons.notifications_off_outlined, size: 20),
                                 ),
                                 GestureDetector(
-                                  onTap: () => _toggleNotification(5),
+                                  onTap: () => _toggleNotification(4),
                                   child: (_todayPrayerData?.notifIsha ?? false)
                                       ? Icon(Icons.notifications_active_outlined, size: 20)
                                       : Icon(Icons.notifications_off_outlined, size: 20),
@@ -520,8 +526,45 @@ class _HomepageState extends State<Homepage> {
     setState(() {
       _todayPrayerData = todayData;
       _yesterdayPrayerData = yesterdayData;
-      if(todayData != null) {NotificationService().scheduleAllNotification(todayData);}
     });
+  }
+
+  Future<void> _scheduleNext7DaysPrayer() async {
+    NotificationService().cancelAllNotifications();
+    for(int i = 0; i < 7; i++) {
+      final date = DateTime.now().add(Duration(days: i));
+      final todayDateString = DateFormat('yyyy-MM-dd').format(date);
+      final todayData = _prayerBox.query(PrayerDatabase_.date.equals(todayDateString)).build().findFirst();
+      if(todayData != null) {
+        NotificationService().schedulePrayerNotif(name: 'Fajr', id: '0', time: todayData.fajr, isEnabled: todayData.notifFajr);
+        NotificationService().schedulePrayerNotif(name: 'Dhuhr', id: '1', time: todayData.dhuhr, isEnabled: todayData.notifDhuhr);
+        NotificationService().schedulePrayerNotif(name: 'Asr', id: '2', time: todayData.asr, isEnabled: todayData.notifAsr);
+        NotificationService().schedulePrayerNotif(name: 'Maghrib', id: '3', time: todayData.maghrib, isEnabled: todayData.notifMaghrib);
+        NotificationService().schedulePrayerNotif(name: 'Isha', id: '4', time: todayData.isha, isEnabled: todayData.notifIsha);
+        WidgetUpdate().schedulePrayerTimeUpdate(name: 'Fajr', index: 0, time: todayData.fajr);
+        WidgetUpdate().schedulePrayerTimeUpdate(name: 'Dhuhr', index: 1, time: todayData.dhuhr);
+        WidgetUpdate().schedulePrayerTimeUpdate(name: 'Asr', index: 2, time: todayData.asr);
+        WidgetUpdate().schedulePrayerTimeUpdate(name: 'Maghrib', index: 3, time: todayData.maghrib);
+        WidgetUpdate().schedulePrayerTimeUpdate(name: 'Isha', index: 4, time: todayData.isha);
+      }
+    }
+  }
+
+  Future<void> _cleanOldWidgetPrayerTimes() async {
+    final now = DateTime.now();
+
+    for (int i = -7; i < 0; i++) {
+      final date = now.add(Duration(days: i));
+      final ymd = DateFormat('yyyyMMdd').format(date);
+
+      for (int p = 0; p < 5; p++) {
+        await HomeWidget.saveWidgetData('${ymd}_${p}_Fajr', null);
+        await HomeWidget.saveWidgetData('${ymd}_${p}_Dhuhr', null);
+        await HomeWidget.saveWidgetData('${ymd}_${p}_Asr', null);
+        await HomeWidget.saveWidgetData('${ymd}_${p}_Maghrib', null);
+        await HomeWidget.saveWidgetData('${ymd}_${p}_Isha', null);
+      }
+    }
   }
 
   Future<void> _getNextPrayerInfo() async {
@@ -585,68 +628,108 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
-  void _toggleNotification(int id) async {
-    bool isEnabled = false;
-    String prayerName = '';
-    DateTime time = DateTime.now();
+  Future<void> _toggleNotification(int id) async {
+    final meta = _metaFromId(id);
 
+    bool isEnabled;
     switch (id) {
-      case 1:
-        prayerName = 'Fajr';
-        time = _todayPrayerData!.fajr;
+      case 0:
         isEnabled = !_todayPrayerData!.notifFajr;
         break;
-      case 2:
-        prayerName = 'Dhuhr';
-        time = _todayPrayerData!.dhuhr;
+      case 1:
         isEnabled = !_todayPrayerData!.notifDhuhr;
         break;
-      case 3:
-        prayerName = 'Asr';
-        time = _todayPrayerData!.asr;
+      case 2:
         isEnabled = !_todayPrayerData!.notifAsr;
         break;
-      case 4:
-        prayerName = 'Maghrib';
-        time = _todayPrayerData!.maghrib;
+      case 3:
         isEnabled = !_todayPrayerData!.notifMaghrib;
         break;
-      case 5:
-        prayerName = 'Isha';
-        time = _todayPrayerData!.isha;
+      case 4:
         isEnabled = !_todayPrayerData!.notifIsha;
         break;
       default:
         return;
     }
 
-    setState(() {
-      final allPrayers = _prayerBox.getAll();
+    final allPrayers = _prayerBox.getAll();
+    for (final prayer in allPrayers) {
+      switch (id) {
+        case 0:
+          prayer.notifFajr = isEnabled;
+          break;
+        case 1:
+          prayer.notifDhuhr = isEnabled;
+          break;
+        case 2:
+          prayer.notifAsr = isEnabled;
+          break;
+        case 3:
+          prayer.notifMaghrib = isEnabled;
+          break;
+        case 4:
+          prayer.notifIsha = isEnabled;
+          break;
+      }
+    }
+    _prayerBox.putMany(allPrayers);
 
-      for (var prayer in allPrayers) {
-        if (id == 1) prayer.notifFajr = isEnabled;
-        if (id == 2) prayer.notifDhuhr = isEnabled;
-        if (id == 3) prayer.notifAsr = isEnabled;
-        if (id == 4) prayer.notifMaghrib = isEnabled;
-        if (id == 5) prayer.notifIsha = isEnabled;
+    final now = DateTime.now();
+
+    for (int i = 0; i < 7; i++) {
+      final date = DateTime(now.year, now.month, now.day + i);
+
+      final prayerForDay = allPrayers.firstWhere(
+            (p) => p.date == DateFormat('yyyy-MM-dd').format(date)
+      );
+
+      DateTime time;
+      switch (id) {
+        case 0:
+          time = prayerForDay.fajr;
+          break;
+        case 1:
+          time = prayerForDay.dhuhr;
+          break;
+        case 2:
+          time = prayerForDay.asr;
+          break;
+        case 3:
+          time = prayerForDay.maghrib;
+          break;
+        case 4:
+          time = prayerForDay.isha;
+          break;
+        default:
+          continue;
       }
 
-      _prayerBox.putMany(allPrayers);
-    });
+      final notifId = prayerNotificationId(date, meta.index);
 
-    if(isEnabled){
-      NotificationService.scheduleNotification(
-        id: id,
-        title: "Prayer Reminder",
-        body: "$prayerName prayer is at ${DateFormat.Hm().format(time)}.",
-        scheduledTime: time,
-      );
-    } else {
-      NotificationService.cancel(id);
+      if (isEnabled) {
+        NotificationService.scheduleNotification(
+          id: notifId,
+          title: "Prayer Reminder",
+          body: "${meta.name} prayer is at ${DateFormat.Hm().format(time)}.",
+          scheduledTime: time,
+        );
+        log("🔔 Notification is set for ${DateFormat('yyyy-MM-dd').format(time)} at $time with id : $notifId 🔔");
+      } else {
+        NotificationService.cancel(notifId);
+        log("❌ Notification is cancelled for ${DateFormat('yyyy-MM-dd').format(time)} at $time with id : $notifId ❌");
+      }
     }
 
-    WidgetUpdate().updateWidgetPrayerNotification(prayerDatabase: _todayPrayerData!);
-    CustomSnackbar().successSnackbar(context, "Notification is ${isEnabled ? 'enabled' : 'disabled'} for $prayerName.");
+    // 4️⃣ Update widget + UI
+    WidgetUpdate().updateWidgetPrayerNotification(
+      prayerDatabase: _todayPrayerData!,
+    );
+
+    CustomSnackbar().successSnackbar(
+      context,
+      "Notification is ${isEnabled ? 'enabled' : 'disabled'} for ${meta.name}.",
+    );
+
     await _getTodayYesterdayPrayerData();
   }
 
@@ -692,5 +775,33 @@ class _HomepageState extends State<Homepage> {
       });
     }
     _showLoadingTracker();
+  }
+
+  int prayerNotificationId(DateTime date, int prayerIndex) {
+    final ymd = DateFormat('yyyyMMdd').format(date);
+    return int.parse('$ymd$prayerIndex');
+  }
+}
+
+class PrayerMeta {
+  final String name;
+  final int index;
+  const PrayerMeta(this.name, this.index);
+}
+
+PrayerMeta _metaFromId(int id) {
+  switch (id) {
+    case 0:
+      return const PrayerMeta('Fajr', 0);
+    case 1:
+      return const PrayerMeta('Dhuhr', 1);
+    case 2:
+      return const PrayerMeta('Asr', 2);
+    case 3:
+      return const PrayerMeta('Maghrib', 3);
+    case 4:
+      return const PrayerMeta('Isha', 4);
+    default:
+      throw Exception('Invalid prayer id');
   }
 }
